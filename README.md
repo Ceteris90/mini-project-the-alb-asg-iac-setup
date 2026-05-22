@@ -1,5 +1,5 @@
+<img width="1380" height="752" alt="Gemini_Generated_Image_ovl4kyovl4kyovl4" src="https://github.com/user-attachments/assets/2de41b0c-9489-40a4-a889-32c78c609f58" />
 
-![Uploading Gemini_Generated_Image_ovl4kyovl4kyovl4.png…]()
 
 Resilient ALB + ASG Architecture Setup
 This repository serves as a blueprint for deploying a highly available, scalable, and secure infrastructure on AWS using Infrastructure as Code (IaC). By configuring an internet-facing Application Load Balancer (ALB) to distribute traffic across an Auto Scaling Group (ASG) in a custom multi-AZ VPC, this project ensures high fault tolerance and a clean separation of networking concerns.
