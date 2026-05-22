@@ -1,3 +1,6 @@
+
+![Uploading Gemini_Generated_Image_ovl4kyovl4kyovl4.png…]()
+
 Resilient ALB + ASG Architecture Setup
 This repository serves as a blueprint for deploying a highly available, scalable, and secure infrastructure on AWS using Infrastructure as Code (IaC). By configuring an internet-facing Application Load Balancer (ALB) to distribute traffic across an Auto Scaling Group (ASG) in a custom multi-AZ VPC, this project ensures high fault tolerance and a clean separation of networking concerns.
 
@@ -12,18 +15,6 @@ Least-Privilege Security: Security groups are tiered so that the web servers in 
 
 Automated Bootstrapping: A launch template equipped with a user-data bash script to dynamically provision Nginx and inject runtime metadata.
 
-📂 Directory Layout
-Plaintext
-.
-├── scripts/
-│   └── user_data.sh        # Provisioning script to install and configure Nginx
-├── main.tf                 # Core VPC networking (Subnets, IGW, NAT Gateways)            # Least-privilege Security Groups and IAM configurations
-├── compute.tf              # Launch Template, Auto Scaling Group, and Target Group       # Application Load Balancer, Listeners, and Rules
-├── variables.tf            # Input configuration variables and defaults
-├── outputs.tf              # Architecture deployment outputs (ALB DNS, VPC ID)
-└── README.md               # Project documentation and deployment guide
-🚀 Getting Started
-1. Prerequisites
 Terraform CLI installed (v1.5.0+).
 
 AWS CLI configured locally with administrative permissions.
