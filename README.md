@@ -5,7 +5,8 @@ This repository is a Terraform blueprint for deploying a highly available, scala
 ## Architecture Overview
 
 ```
-<img width="1380" height="752" alt="Gemini_Generated_Image_ovl4kyovl4kyovl4" src="https://github.com/user-attachments/assets/2de41b0c-9489-40a4-a889-32c78c609f58" />
+<img width="1380" height="752" alt="597032877-2de41b0c-9489-40a4-a889-32c78c609f58" src="https://github.com/user-attachments/assets/b3098cad-a8bb-4a3f-a5de-bc069427b2d8" />
+
 ```
 
 - **Public subnets** host the ALB and the NAT Gateways (one per AZ for true multi-AZ resilience).
