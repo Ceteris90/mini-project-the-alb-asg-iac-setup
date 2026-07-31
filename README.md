@@ -1,59 +1,136 @@
-<img width="1380" height="752" alt="Gemini_Generated_Image_ovl4kyovl4kyovl4" src="https://github.com/user-attachments/assets/2de41b0c-9489-40a4-a889-32c78c609f58" />
+# Resilient ALB + ASG Architecture on AWS (Terraform)
 
+This repository is a Terraform blueprint for deploying a highly available, scalable, and secure web architecture on AWS. It provisions a custom multi-AZ VPC, an internet-facing Application Load Balancer (ALB), and an Auto Scaling Group (ASG) of Nginx web servers running in private subnets — following AWS best practices for network isolation and least-privilege access.
 
-Resilient ALB + ASG Architecture Setup
-This repository serves as a blueprint for deploying a highly available, scalable, and secure infrastructure on AWS using Infrastructure as Code (IaC). By configuring an internet-facing Application Load Balancer (ALB) to distribute traffic across an Auto Scaling Group (ASG) in a custom multi-AZ VPC, this project ensures high fault tolerance and a clean separation of networking concerns.
+## Architecture Overview
 
-🏗 Project Architecture
-The architecture adheres strictly to AWS production-ready best practices:
+```
+                         ┌─────────────────────────────┐
+                         │        Internet Gateway      │
+                         └───────────────┬──────────────┘
+                                          │
+                ┌─────────────────────────┴─────────────────────────┐
+                │                     VPC (10.0.0.0/16)              │
+                │                                                    │
+                │   ┌───────────────────┐     ┌───────────────────┐ │
+                │   │  Public Subnet AZ1 │     │  Public Subnet AZ2 │ │
+                │   │   NAT Gateway      │     │   NAT Gateway      │ │
+                │   └─────────┬─────────┘     └─────────┬─────────┘ │
+                │             │      Application Load Balancer      │
+                │             └───────────────┬─────────────────────┘
+                │                             │
+                │   ┌───────────────────┐     ┌───────────────────┐ │
+                │   │ Private Subnet AZ1 │     │ Private Subnet AZ2 │ │
+                │   │  EC2 (Nginx/ASG)   │     │  EC2 (Nginx/ASG)   │ │
+                │   └───────────────────┘     └───────────────────┘ │
+                └────────────────────────────────────────────────────┘
+```
 
-Network Isolation: A custom VPC with public subnets hosting the ALB, and private subnets hosting the compute instances.
+- **Public subnets** host the ALB and the NAT Gateways (one per AZ for true multi-AZ resilience).
+- **Private subnets** host the EC2 instances managed by the Auto Scaling Group — they have no public IPs and reach the internet only through the NAT Gateways.
+- **Security Groups** are tiered: the ALB accepts HTTP traffic from anywhere, while the EC2 instances accept HTTP traffic only from the ALB's security group.
 
-Elastic Scaling: An Auto Scaling Group managing Nginx web instances across multiple Availability Zones.
+## Features
 
-Least-Privilege Security: Security groups are tiered so that the web servers in private subnets only accept HTTP traffic originating from the ALB.
+- **Multi-AZ resiliency** — Public/private subnets and NAT Gateways are distributed across multiple Availability Zones, eliminating single points of failure.
+- **Dynamic traffic distribution** — The ALB performs health checks against the target group and reroutes traffic away from unhealthy instances automatically.
+- **Elastic, stateless compute** — The ASG scales between a configurable min and max instance count, replacing unhealthy nodes automatically.
+- **Automated bootstrapping** — A launch template user-data script installs and starts Nginx, and serves a landing page displaying the instance's hostname (handy for confirming load balancing is working).
+- **Least-privilege networking** — Web servers are never exposed directly to the internet; all inbound traffic must pass through the ALB.
+- **Dynamic AMI lookup** — The launch template always uses the latest Amazon Linux 2023 AMI via a data source, instead of a hardcoded AMI ID.
 
-Automated Bootstrapping: A launch template equipped with a user-data bash script to dynamically provision Nginx and inject runtime metadata.
+## Repository Structure
 
-Terraform CLI installed (v1.5.0+).
+```
+.
+├── main.tf                              # Root module — wires up the child module
+└── modules/
+    └── computer_storage/
+        ├── main.tf                      # VPC, subnets, IGW, NAT gateways, route tables
+        ├── compute_and_alb.tf           # Security groups, ALB, target group, listener,
+        │                                #   launch template, and Auto Scaling Group
+        ├── variables.tf                 # Input variables and defaults
+        └── output.tf                    # Output values (VPC ID, subnet IDs, ALB DNS name)
+```
 
-AWS CLI configured locally with administrative permissions.
+## Prerequisites
 
-Active AWS Account.
+- [Terraform](https://developer.hashicorp.com/terraform/downloads) v1.5.0 or later
+- [AWS CLI](https://aws.amazon.com/cli/) installed and configured with credentials that have permission to create VPC, EC2, Auto Scaling, and ELB resources
+- An active AWS account
 
-2. Initialization
-Navigate to the root project directory where your configuration files are located and initialize the Terraform provider and backend:
+## Configuration
 
-Bash
+All inputs are defined in `modules/computer_storage/variables.tf` and can be overridden via a `terraform.tfvars` file or `-var` flags.
+
+| Variable               | Type         | Default                              | Description                                       |
+|-------------------------|--------------|---------------------------------------|----------------------------------------------------|
+| `aws_region`            | string       | `us-east-1`                          | AWS region to deploy resources into                |
+| `vpc_cidr`              | string       | `10.0.0.0/16`                        | Base CIDR block for the VPC                        |
+| `public_subnet_cidrs`   | list(string) | `["10.0.1.0/24", "10.0.2.0/24"]`     | CIDR blocks for public subnets (requires at least 2)|
+| `private_subnet_cidrs`  | list(string) | `["10.0.11.0/24", "10.0.12.0/24"]`   | CIDR blocks for private subnets (requires at least 2)|
+| `instance_type`         | string       | `t3.micro`                           | EC2 instance type for the web servers               |
+| `asg_min_size`          | number       | `2`                                   | Minimum number of instances in the ASG              |
+| `asg_max_size`          | number       | `4`                                   | Maximum number of instances in the ASG              |
+| `asg_desired_capacity`  | number       | `2`                                   | Desired number of instances in the ASG              |
+
+## Usage
+
+### 1. Initialize Terraform
+
+```bash
 terraform init
-3. Deployment Flow
-Always validate your syntax and run an execution plan to verify what resources will be created, modified, or destroyed:
+```
 
-Bash
+### 2. Review the execution plan
+
+```bash
 terraform validate
 terraform plan
-If the execution plan looks correct, apply the changes to provision the infrastructure:
+```
 
-Bash
+### 3. Apply the configuration
+
+```bash
 terraform apply -auto-approve
-⏱ Note: The initial deployment may take 3 to 5 minutes while AWS provisions the multi-AZ NAT Gateways and runs initial health validation checks on the web nodes.
+```
 
-🛠 Features
-Multi-AZ Resiliency: Redundant NAT Gateways and subnet layers distributed symmetrically across distinct Availability Zones to eliminate single points of failure.
+> ⏱ **Note:** Initial deployment can take 3–5 minutes while AWS provisions the multi-AZ NAT Gateways and runs initial health checks on the web instances.
 
-Dynamic Traffic Distribution: The ALB tracks instance health via custom HTTP endpoints, instantly rerouting traffic if a single node fails.
+### 4. Test the deployment
 
-Stateless Compute: Instances can scale out (up to 4) or scale in (down to 2) dynamically based on performance parameters or scheduling demands.
+After `terraform apply` completes, grab the `alb_dns_name` output and open it in a browser or curl it a few times — you should see the hostname change as the ALB distributes traffic across instances:
 
-Dynamic Metadata Landing Page: The bootstrap script builds a tailored index page capturing the active Instance ID and current Availability Zone at initialization.
+```bash
+terraform output alb_dns_name
+curl http://<alb_dns_name>
+```
 
-📝 Best Practices
-State Verification: Inspect the final alb_dns_name output variable string to test traffic balancing via an external browser.
+## Outputs
 
-State Cleanliness: Always run terraform fmt to maintain style formatting standards across configuration files before committing changes.
+| Output               | Description                                                        |
+|-----------------------|---------------------------------------------------------------------|
+| `vpc_id`              | The ID of the provisioned VPC                                       |
+| `public_subnet_ids`   | IDs of the public subnets                                            |
+| `private_subnet_ids`  | IDs of the private subnets                                           |
+| `alb_dns_name`        | Public DNS name of the ALB — use this to test the deployment        |
 
-Destruction Lifecycle: To ensure you do not incur ongoing AWS infrastructure charges for this setup, run the teardown workflow when finished:
+## Best Practices Applied
 
-Bash
+- **State verification** — Use the `alb_dns_name` output to confirm traffic is being balanced correctly.
+- **Formatting** — Run `terraform fmt` before committing to keep configuration style consistent.
+- **Clean teardown** — Destroy all resources when you're done to avoid ongoing AWS charges:
+
+```bash
 terraform destroy -auto-approve
-Maintained by: [Jonas Kwame Nyador]
+```
+
+## Notes & Possible Improvements
+
+- The `provider "aws"` block is currently defined inside the child module; for larger projects it's generally cleaner to define providers in the root module and pass configuration down.
+- HTTPS/TLS termination on the ALB (via ACM + an HTTPS listener) is not yet configured — currently only HTTP (port 80) is supported.
+- No remote backend (e.g., S3 + DynamoDB) is configured for Terraform state; consider adding one for team use.
+
+## Maintained by
+
+Jonas Kwame Nyador
