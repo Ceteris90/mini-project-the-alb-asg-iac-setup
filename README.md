@@ -5,25 +5,7 @@ This repository is a Terraform blueprint for deploying a highly available, scala
 ## Architecture Overview
 
 ```
-                         ┌─────────────────────────────┐
-                         │        Internet Gateway      │
-                         └───────────────┬──────────────┘
-                                          │
-                ┌─────────────────────────┴─────────────────────────┐
-                │                     VPC (10.0.0.0/16)              │
-                │                                                    │
-                │   ┌───────────────────┐     ┌───────────────────┐ │
-                │   │  Public Subnet AZ1 │     │  Public Subnet AZ2 │ │
-                │   │   NAT Gateway      │     │   NAT Gateway      │ │
-                │   └─────────┬─────────┘     └─────────┬─────────┘ │
-                │             │      Application Load Balancer      │
-                │             └───────────────┬─────────────────────┘
-                │                             │
-                │   ┌───────────────────┐     ┌───────────────────┐ │
-                │   │ Private Subnet AZ1 │     │ Private Subnet AZ2 │ │
-                │   │  EC2 (Nginx/ASG)   │     │  EC2 (Nginx/ASG)   │ │
-                │   └───────────────────┘     └───────────────────┘ │
-                └────────────────────────────────────────────────────┘
+<img width="1380" height="752" alt="Gemini_Generated_Image_ovl4kyovl4kyovl4" src="https://github.com/user-attachments/assets/2de41b0c-9489-40a4-a889-32c78c609f58" />
 ```
 
 - **Public subnets** host the ALB and the NAT Gateways (one per AZ for true multi-AZ resilience).
