@@ -4,10 +4,8 @@ This repository is a Terraform blueprint for deploying a highly available, scala
 
 ## Architecture Overview
 
-```
-<img width="1380" height="752" alt="597032877-2de41b0c-9489-40a4-a889-32c78c609f58" src="https://github.com/user-attachments/assets/b3098cad-a8bb-4a3f-a5de-bc069427b2d8" />
+<img width="1380" height="752" alt="597032877-2de41b0c-9489-40a4-a889-32c78c609f58" src="https://github.com/user-attachments/assets/5516740b-caf6-45eb-9d65-ccadc00063f2" />
 
-```
 
 - **Public subnets** host the ALB and the NAT Gateways (one per AZ for true multi-AZ resilience).
 - **Private subnets** host the EC2 instances managed by the Auto Scaling Group — they have no public IPs and reach the internet only through the NAT Gateways.
